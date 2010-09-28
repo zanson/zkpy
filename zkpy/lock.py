@@ -44,7 +44,7 @@ class Lock(object):
         try:
             _stat, self._acls = self._connection.get_acl(path)
         except zookeeper.NoNodeException:
-            raise RuntimeError('Node %s needs to exist.' % self._path())
+            raise RuntimeError('Node %s needs to exist.' % self._path)
 
 
     def __del__(self):
