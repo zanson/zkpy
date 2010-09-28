@@ -6,6 +6,9 @@ import zookeeper
 
 logger = logging.getLogger(__name__)
 
+class RetryOperationError(Exception):
+    pass
+
 def zk_retry_operation(operation,  retry_count = 10, retry_delay = 0.5):
     '''Retries a zk operation for several times.
     Can be used as a decorator (with default arguments)
@@ -33,5 +36,6 @@ def zk_retry_operation(operation,  retry_count = 10, retry_delay = 0.5):
                     logger.error('Retried operation for %d times. Giving up')
                     raise e
                 time.sleep(retry_delay)
+        raise RetryOperationError('Could not execute %s. Retried for %d times' % (operation, retry_count))
     return wrapper
 
