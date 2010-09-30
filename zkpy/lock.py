@@ -71,11 +71,11 @@ class Lock(object):
             self._id = None
             if self.watcher:
                 self.watcher.lock_released()
-            self._connection.close()
+            #TODO: handle! raise?
         elif state == KeeperState.Connecting:
-            logger.warning('Connection to zookeeper server')
+            logger.warning('Watcher: Connecting state!')
         else:
-            logger.debug('Lock \'%s\' catched connection event \'%s\'' %  (self._id, KeeperState[state]))
+            logger.debug('Watcher: Lock \'%s\' catched connection event \'%s\'' %  (self._id, KeeperState[state]))
             self._lock()
 
 
