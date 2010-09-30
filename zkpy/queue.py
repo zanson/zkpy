@@ -105,7 +105,7 @@ class Queue(object):
                 # queue was empty. wait that something changes...
                 condition.wait(timeout)
                 # check for timeout
-                if not condition.set():
+                if not condition.isSet():
                     raise RuntimeError('pop_blocking timed out')
                 # reset condition. in case a node was added and removed..
                 condition.clear()
