@@ -11,16 +11,17 @@ Short example:
 --------------
 
     from __future__ import with_statement
-    from zkpy.acl import Acls, IdSchema
+    from zkpy.acl import Acls
     from zkpy.connection import zkopen, KeeperState, EventType, NodeCreationMode
-    import zookeeper
+    
     # define a watcher function
     def global_watcher(type, state, path):
         print 'GLOBAL: event=%s, state=%s, path=%s' % (EventType[type], KeeperState[state], path)
+        
     with zkopen('localhost:2181', 5) as conn:
         # add a connection watcher for fun
         conn.add_global_watcher(global_watcher)
-       
+        
         # create a node
         conn.create('/bar','', [Acls.Unsafe], NodeCreationMode.Ephemeral)
         print conn.get_children('/')
