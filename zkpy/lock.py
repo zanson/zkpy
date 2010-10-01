@@ -9,6 +9,7 @@ from zkpy.connection import KeeperState, NodeCreationMode, EventType
 import logging
 import operator
 import zookeeper
+from zkpy.exceptions import NoNodeException
 
 
 logger = logging.getLogger(__name__)
@@ -44,7 +45,7 @@ class Lock(object):
         try:
             _stat, self._acls = self._connection.get_acl(path)
         except zookeeper.NoNodeException:
-            raise RuntimeError('Node %s needs to exist.' % self._path)
+            raise NoNodeException('Node %s needs to exist.' % self._path)
 
 
     def __del__(self):
@@ -131,7 +132,11 @@ class Lock(object):
             if not self._id:
                 session_id, _data = self._connection.client_id()
                 node_name_prefix = self._id_to_node_prefix(session_id)
-                self._id = self._get_or_create_lock_node(node_name_prefix)
+                try:
+                    self._id = self._get_or_create_lock_node(node_name_prefix)
+                except zookeeper.NoNodeException:
+                    #TODO: move to connection wrapper
+                    raise NoNodeException()
 
             # get children and store them as a list of (seq_id, name)
             children = [ (int(child[child.rfind('-')+1:]), child)
@@ -216,11 +221,10 @@ class Lock(object):
         # as ZK will remove ephemeral files and we don't want to hang
         # this process when closing if we cannot reconnect to ZK
         try:
-            self._connection.delete('%s/%s' % (self._path, node_id))
-
+            zk_retry_operation(self._connection.delete)('%s/%s' % (self._path, node_id))
         # we do not bother, if there is no such node
         except zookeeper.NoNodeException:
-            logger.warn('No such node')
+            logger.warn('No such node to delete')
             return
         finally:
             if self.watcher:
