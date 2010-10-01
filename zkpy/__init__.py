@@ -33,7 +33,7 @@ def zk_retry_operation(operation,  retry_count = 10, retry_delay = 0.5):
                 raise e
             except zookeeper.ConnectionLossException, e:
                 if attempt_count >= retry_count:
-                    logger.error('Retried operation for %d times. Giving up')
+                    logger.error('Retried operation for %d times. Giving up' % attempt_count)
                     raise e
                 time.sleep(retry_delay)
         raise RetryOperationError('Could not execute %s. Retried for %d times' % (operation, retry_count))
