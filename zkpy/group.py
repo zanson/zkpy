@@ -1,6 +1,6 @@
 from socket import gethostname
 from zkpy import zk_retry_operation
-from zkpy.connection import EventType, NodeCreationMode
+from zkpy.connection import EventType, NodeCreationMode, KeeperState
 from zkpy.utils import enum
 import logging
 import zookeeper
@@ -51,7 +51,10 @@ class Group(object):
 
     def _pool_watcher(self, handle, event, state, path):
 
-        self.logger.info('watcher cb called handle=%d type=%s state=%s path=%s' % (handle, EventType[event], state, path))
+        #TODO: fix this
+        if state != KeeperState.Connected:
+            self.logger.info('watcher cb called handle=%d type=%s state=%s path=%s' % (handle, EventType[event], state, path))
+            return
 
         # re add watcher
         self.zk_conn.get_children(self.path, self._pool_watcher)
