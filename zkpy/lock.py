@@ -34,7 +34,6 @@ class Lock(object):
         '''
         # provided properties
         self._connection = connection
-        self._connection.add_global_watcher(self._connection_watcher)
         self._path = path
         self.watcher = watcher
 
@@ -49,8 +48,9 @@ class Lock(object):
 
 
     def __del__(self):
-        #release lock, if is aquired
-        self.release()
+        #release lock, if is acquired
+        if self._id:
+            self.release()
 
     @property
     def path(self):
@@ -68,16 +68,18 @@ class Lock(object):
 
         # check new connection
         if state == KeeperState.Expired:
-            logger.warning('Connection expired! Lock \'%s\' is released.' % self._id)
+            logger.warning('Connection expired! Lock \'%s\' implicitely released.' % self._id)
             self._id = None
+            self._connection.remove_global_watcher(self._connection_watcher)
             if self.watcher:
                 self.watcher.lock_released()
-            #TODO: handle! raise?
         elif state == KeeperState.Connecting:
-            logger.warning('Watcher: Connecting state!')
+            logger.warning('Watcher: Lock \'%s\' Connecting state!'  %  self._id)
+        elif state == KeeperState.Connected:
+            logger.debug('Watcher: Lock \'%s\' connected. locking...' %  self._id)
+            self._lock()
         else:
             logger.debug('Watcher: Lock \'%s\' catched connection event \'%s\'' %  (self._id, KeeperState[state]))
-            self._lock()
 
 
 
@@ -115,6 +117,9 @@ class Lock(object):
         # check, if we need to lock ourself?
         if self.is_owner():
             return True
+
+        # register observer
+        self._connection.add_global_watcher(self._connection_watcher)
 
         return self._lock()
 
@@ -212,6 +217,9 @@ class Lock(object):
         if not self._connection.is_connected():
             logger.info('No connection. Lock is already released')
             return
+
+        # remove watcher
+        self._connection.remove_global_watcher(self._connection_watcher)
 
         # set us to released
         node_id = self._id
