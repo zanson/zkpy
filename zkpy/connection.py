@@ -87,9 +87,11 @@ class Connection(object):
         if self._handle != handle:
             raise RuntimeError('Inconsistend handles!')
 
-        for watcher in self._watchers:
+        # copy list: watchers might remove themselve during this call...
+        for watcher in list(self._watchers):
             watcher(type, state, path)
 
+        #TODO: handle expiration
 
     def __getattr__(self, call):
         '''
@@ -112,7 +114,7 @@ class Connection(object):
         # create and return a wrapper function (http://gael-varoquaux.info/blog/?p=120)s
         @wraps(wrapped)
         def wrapper(*args, **kwargs):
-            logger.debug('calling %s(%s, %s)' % (call, ', '.join(str(arg) for arg in args), ', '.join('%s=%s' % (k,v) for k,v in kwargs.items())))
+            #logger.debug('calling %s(%s, %s)' % (call, ', '.join(str(arg) for arg in args), ', '.join('%s=%s' % (k,v) for k,v in kwargs.items())))
             return wrapped(self._handle, *args, **kwargs)
 
         return wrapper
@@ -128,6 +130,15 @@ class Connection(object):
     def add_global_watcher(self, watcher):
         '''Adds a watcher to  global events'''
         self._watchers.add(watcher)
+
+    def remove_global_watcher(self, watcher):
+        '''Removes a formerly added watcher.
+        Does nothing, if the watcher is not in the pool
+        '''
+        try:
+            self._watchers.remove(watcher)
+        except KeyError:
+            self.logger.warn('remove_global_watcher: %s is not in the oberserver pool' % watcher)
 
     def recv_timeout(self):
         '''Returns zookeeper's recv timout in seconds.'''
