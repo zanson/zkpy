@@ -68,13 +68,21 @@ class Lock(object):
 
         # check new connection
         if state == KeeperState.Expired:
-            logger.warning('Connection expired! Lock \'%s\' implicitely released.' % self._id)
+
+            if self._id:
+                logger.warning('Connection expired! Lock \'%s\' implicitely released.' % self._id)
+            else:
+                logger.warning('Connection expired on NONE lock! (path=%s, last_owner=%s)' % (self._path, self._last_owner))
+
             self._id = None
             self._connection.remove_global_watcher(self._connection_watcher)
             if self.watcher:
                 self.watcher.lock_released()
         elif state == KeeperState.Connecting:
-            logger.warning('Watcher: Lock \'%s\' Connecting state!'  %  self._id)
+            if self._id:
+                logger.warning('Connection expired! Lock \'%s\' implicitely released.' % self._id)
+            else:
+                logger.warning('Connection expired on NONE lock! (path=%s, last_owner=%s)' % (self._path, self._last_owner))
         elif state == KeeperState.Connected:
             logger.debug('Watcher: Lock \'%s\' connected. locking...' %  self._id)
             self._lock()
@@ -120,8 +128,12 @@ class Lock(object):
 
         # register observer
         self._connection.add_global_watcher(self._connection_watcher)
-
-        return self._lock()
+        
+        try:
+            return self._lock()
+        except:
+            # something went wrong, thus we remove the observer
+            self._connection.remove_global_watcher(self._connection_watcher)
 
 
     @zk_retry_operation
