@@ -225,8 +225,9 @@ class Connection(object):
         condition.release()
 
         if zookeeper.state(self._handle) != zookeeper.CONNECTED_STATE:
+            zookeeper.close(self._handle)
             raise RuntimeError(
-                'unable to connect to %s (%d)' % (' or '.join(self._servers), zookeeper.state(self._handle)))
+                'unable to connect to %s ' % (' or '.join(self._servers)))
         zookeeper.set_watcher(self._handle, self.__global_watch)
 
 
@@ -314,7 +315,7 @@ class zkopen(object):
     def __exit__(self, type, value, traceback):
         if self.connection:
             self.connection.close()
-            del self.connection
+            self.connection = None
 
 # Event types
 EventType = enum(
